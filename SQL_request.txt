@@ -1,6 +1,7 @@
 MakeUpperCase
 
 select s, upper(s) as res from makeuppercase;
+
 ------------------------------------------------------------------------------
 
 SQL Basics: Simple EXISTS
@@ -8,17 +9,20 @@ SQL Basics: Simple EXISTS
 select departments.name, departments.id from departments
 where exists
 (select price from sales where sales.department_id=departments.id and price > 98);
+
 --------------------------------------------------------------------------------
 SQL Basics: Simple IN
 
 select id, name from departments
 where id in (select department_id from sales where price > 98.00)
+
 ---------------------------------------------------------------------------------
 Easy SQL: Counting and Grouping
 
 select race, count(id) as count from demographics
 group by race
 order by count DESC;
+
 -----------------------------------------------------------------------------
 Consolidating Sales and Returns Data
 
@@ -30,6 +34,7 @@ from table_sales as ts
 full join table_returns as tr
 on ts.product_id=tr.product_id and ts.date=tr.date
 order by  product_id asc, date asc;
+
 -----------------------------------------------------------------------------
 Customers with All Orders Undelivered
 
@@ -38,6 +43,7 @@ from orders
 where customer_id not in 
 (select customer_id from orders where delivery_date is not null) 
 order by 1 desc
+
 -----------------------------------------------------------------------------
 Number of New Customers per Date
 
@@ -48,6 +54,7 @@ from customer_purchases
 group by customer_id) as x
 group by date
 order by date asc
+
 --------------------------------------------------------------------------------
 Books That Are Always Being Returned
 
@@ -60,6 +67,7 @@ where b.book_id not in
 from loans l
 where return_date is null)
 order by b.book_id desc
+
 ----------------------------------------------------------------------------------
 The Dunning-Kruger effect
 
@@ -74,6 +82,7 @@ case
  where perceived_skill_level>actual_skill_level
  order by skill_overestimation desc, id desc
 -- Beware of Dunning-Kruger effect: you might not be as good as you think!
+
 ---------------------------------------------------------------------------------
 Users with More Than 2 Videos Watched
 
@@ -90,6 +99,7 @@ order by 1 asc) as x
 group by user_id
 having count(video_id)>1) as z)
 order by 1 asc, 2 asc
+
 -----------------------------------------------------------------------
 All-Inclusive Shoppers
 
@@ -110,6 +120,7 @@ order by u.id asc, o.product_id asc) as x
 group by uid, uname
 having count(pr_id) = (select pr_sum from cte)) as y
 order by 1 desc
+
 --------------------------------------------------------------------------
 SQL with Sailor Moon: Thinking about JOINs...
 
@@ -120,4 +131,37 @@ left join cats c
 on ss.cat_id=c.id
 full join schools sc
 on sc.id=ss.school_id
+
 ------------------------------------------------------------------------------
+Sorting Madness: part 2
+
+with mltp as (
+select order_id, product_id,
+min(order_id) over (partition by product_id) as min_order_id
+from orders
+where product_id in
+(select product_id
+from
+(select product_id, count(order_id)
+from orders
+group by product_id
+having count(order_id)>1) as x)
+order by min_order_id asc, 2 desc, 1 asc),
+ 
+sngl as (
+select order_id, product_id,
+min(order_id) over (partition by product_id) as min_order_id
+from orders
+where product_id in
+(select product_id
+from
+(select product_id, count(order_id)
+from orders
+group by product_id
+having count(order_id)=1) as y)
+order by min_order_id asc, 2 desc, 1 asc)
+
+select order_id, product_id from mltp
+union all
+select order_id, product_id from sngl
+
