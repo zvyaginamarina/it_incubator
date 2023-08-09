@@ -1,19 +1,26 @@
+MakeUpperCase
+
 select s, upper(s) as res from makeuppercase;
---# write your SQL statement here: you are given a table 'makeuppercase' with column 's', return a table with column 's' and your result in a column named 'res'.
+------------------------------------------------------------------------------
+
+SQL Basics: Simple EXISTS
 
 select departments.name, departments.id from departments
 where exists
 (select price from sales where sales.department_id=departments.id and price > 98);
--- Create your SELECT statement here
+--------------------------------------------------------------------------------
+SQL Basics: Simple IN
 
 select id, name from departments
 where id in (select department_id from sales where price > 98.00)
--- Create your SELECT statement here
+---------------------------------------------------------------------------------
+Easy SQL: Counting and Grouping
 
 select race, count(id) as count from demographics
 group by race
 order by count DESC;
-/*  SQL  */
+-----------------------------------------------------------------------------
+Consolidating Sales and Returns Data
 
 select coalesce(ts.product_id, tr.product_id) as product_id, 
 ts.quantity as sale_qty, 
@@ -23,14 +30,16 @@ from table_sales as ts
 full join table_returns as tr
 on ts.product_id=tr.product_id and ts.date=tr.date
 order by  product_id asc, date asc;
--- Substitute with your SQL
+-----------------------------------------------------------------------------
+Customers with All Orders Undelivered
 
 select distinct customer_id
 from orders 
 where customer_id not in 
 (select customer_id from orders where delivery_date is not null) 
 order by 1 desc
--- Substitute with your SQL
+-----------------------------------------------------------------------------
+Number of New Customers per Date
 
 select x.date as date, count(customer_id) as num_new_customers
 from
@@ -39,6 +48,8 @@ from customer_purchases
 group by customer_id) as x
 group by date
 order by date asc
+--------------------------------------------------------------------------------
+Books That Are Always Being Returned
 
 select distinct b.book_id, b.title 
 from books b
@@ -49,6 +60,8 @@ where b.book_id not in
 from loans l
 where return_date is null)
 order by b.book_id desc
+----------------------------------------------------------------------------------
+The Dunning-Kruger effect
 
 select id,name,(perceived_skill_level-actual_skill_level) as skill_overestimation,
 case 
@@ -60,5 +73,51 @@ case
  from users 
  where perceived_skill_level>actual_skill_level
  order by skill_overestimation desc, id desc
-
 -- Beware of Dunning-Kruger effect: you might not be as good as you think!
+---------------------------------------------------------------------------------
+Users with More Than 2 Videos Watched
+
+select user_id, video_id 
+from user_playlist
+group by user_id, video_id
+having user_id in
+(select user_id from
+(select user_id, count(video_id) from
+(select user_id, video_id, count(video_id)
+from user_playlist
+group by user_id, video_id
+order by 1 asc) as x
+group by user_id
+having count(video_id)>1) as z)
+order by 1 asc, 2 asc
+-----------------------------------------------------------------------
+All-Inclusive Shoppers
+
+with cte as (
+select count(id) as pr_sum from products)
+
+select uid as user_id, uname as name
+from
+(select uid, uname, count(pr_id)
+from
+(select u.id as uid, u.name as uname, o.product_id as pr_id, p.product_name
+from users u
+full join orders o
+on u.id=o.user_id
+full join products p
+on o.product_id=p.id
+order by u.id asc, o.product_id asc) as x
+group by uid, uname
+having count(pr_id) = (select pr_sum from cte)) as y
+order by 1 desc
+--------------------------------------------------------------------------
+SQL with Sailor Moon: Thinking about JOINs...
+
+select ss.senshi_name as sailor_senshi, ss.real_name_jpn as real_name,
+c.name as cat, sc.school as school
+from sailorsenshi ss
+left join cats c
+on ss.cat_id=c.id
+full join schools sc
+on sc.id=ss.school_id
+------------------------------------------------------------------------------
