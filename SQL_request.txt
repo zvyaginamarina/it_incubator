@@ -164,4 +164,40 @@ order by min_order_id asc, 2 desc, 1 asc)
 select order_id, product_id from mltp
 union all
 select order_id, product_id from sngl
+------------------------------------------------------------------------
+SQL Basics: Simple JOIN with COUNT
+
+select  ppl.id, ppl.name, count(toys.id) toy_count
+from people ppl
+join toys toys
+on toys.people_id=ppl.id
+group by ppl.id, ppl.name;
+------------------------------------------------------------------------
+Order Ratio for Each Product
+
+with total as (
+select count(*) as total from orders)
+
+select  product_id, count(*) as count, ((count(*)::decimal/total.total)::decimal(6,4)*100) as ratio
+from orders, total
+group by product_id, total.total
+order by 1 asc;
+-------------------------------------------------------------------------
+Deal Activity Analysis
+
+with d_active as (
+select account_id, 
+case
+when extract(day from now()-occurred_at)<90 then true
+else false
+end as is_active,
+extract(day from now()-occurred_at)||' days and '||extract(hours from now()-occurred_at)||' hours ago' as last_login
+from deal_login_fact)
+
+select d.deal_id, d.deal_name, d_active.is_active as is_active, d_active.last_login as last_login
+from deals d
+join d_active
+on d.deal_id=d_active.account_id
+order by 1 desc;
+
 
