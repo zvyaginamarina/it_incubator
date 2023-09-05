@@ -199,5 +199,61 @@ from deals d
 join d_active
 on d.deal_id=d_active.account_id
 order by 1 desc;
+----------------------------------------------------------------------------------------------------------
+SQL with LOTR: Elven Wildcards
 
+select initcap(firstname)||' '||initcap(lastname) as shortlist
+from elves
+where firstname like '%tegil%'
+or
+lastname like '%astar%';
+----------------------------------------------------------------------------------------------------------
+SQL with Street Fighter: Total Wins
+
+select f.name, sum(f.won) won, sum(f.lost) lost
+from fighters f
+join winning_moves wm
+on f.move_id=wm.id
+where wm.id not in
+(select winning_moves.id from winning_moves
+where move like 'Hadoken'
+or move like 'Shouoken'
+or move like 'Kikoken')
+group by f.name
+order by 2 desc limit 6;
+
+
+
+
+
+
+
+
+________________________________________________________________
+with bs as (
+select student_id, subject_id, mark_rate, max_grade from
+(select student_id, subject_id, mark_rate,
+max(mark_rate) over (partition by subject_id order by mark_rate desc) as max_grade
+from marks) as best_stud
+where mark_rate=max_grade),
+
+total_subjects as (
+select count(distinct(subject_id)) as t_subj
+from marks),
+
+stu_subj_total as (
+select student_id, count(subject_id) as s_subj
+from bs
+group by student_id),
+
+best as (
+select bs.student_id, s.student_name 
+from bs
+join students s
+on bs.student_id=s.student_id)
+
+select distinct(best.student_id), best.student_name
+from best, total_subjects, stu_subj_total
+where total_subjects.t_subj= stu_subj_total.s_subj
+order by 1 desc;
 
