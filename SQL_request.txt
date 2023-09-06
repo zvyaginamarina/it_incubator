@@ -164,6 +164,7 @@ order by min_order_id asc, 2 desc, 1 asc)
 select order_id, product_id from mltp
 union all
 select order_id, product_id from sngl
+
 ------------------------------------------------------------------------
 SQL Basics: Simple JOIN with COUNT
 
@@ -172,6 +173,7 @@ from people ppl
 join toys toys
 on toys.people_id=ppl.id
 group by ppl.id, ppl.name;
+
 ------------------------------------------------------------------------
 Order Ratio for Each Product
 
@@ -182,6 +184,7 @@ select  product_id, count(*) as count, ((count(*)::decimal/total.total)::decimal
 from orders, total
 group by product_id, total.total
 order by 1 asc;
+
 -------------------------------------------------------------------------
 Deal Activity Analysis
 
@@ -199,6 +202,7 @@ from deals d
 join d_active
 on d.deal_id=d_active.account_id
 order by 1 desc;
+
 ----------------------------------------------------------------------------------------------------------
 SQL with LOTR: Elven Wildcards
 
@@ -207,6 +211,7 @@ from elves
 where firstname like '%tegil%'
 or
 lastname like '%astar%';
+
 ----------------------------------------------------------------------------------------------------------
 SQL with Street Fighter: Total Wins
 
@@ -222,38 +227,149 @@ or move like 'Kikoken')
 group by f.name
 order by 2 desc limit 6;
 
+---------------------------------------------------------------------------------------------------------
+Countries Capitals for Trivia Night (SQL for Beginners #6)
 
+select capital from  countries 
+where continent like '%Afri_a'
+and country like initcap('e%')
+order by capital asc limit 3;
 
+---------------------------------------------------------------------------------------------------------
+Adults only (SQL for Beginners #1)
 
+select * from users
+where age >=18;
 
+---------------------------------------------------------------------------------------------------------
+On the Canadian Border (SQL for Beginners #2)
 
+select * from travelers
+where country not like initcap('canada')
+and country not like initcap('mexico')
+and country not like upper('usa');
 
+---------------------------------------------------------------------------------------------------------
+Register for the Party (SQL for Beginners #3)
 
-________________________________________________________________
-with bs as (
-select student_id, subject_id, mark_rate, max_grade from
-(select student_id, subject_id, mark_rate,
-max(mark_rate) over (partition by subject_id order by mark_rate desc) as max_grade
-from marks) as best_stud
-where mark_rate=max_grade),
+INSERT into participants (name, age, attending)
+values ('Marina', 35, true);
 
-total_subjects as (
-select count(distinct(subject_id)) as t_subj
-from marks),
+SELECT * FROM participants;
 
-stu_subj_total as (
-select student_id, count(subject_id) as s_subj
-from bs
-group by student_id),
+---------------------------------------------------------------------------------------------------------
+Collect Tuition (SQL for Beginners #4)
 
-best as (
-select bs.student_id, s.student_name 
-from bs
-join students s
-on bs.student_id=s.student_id)
+select * from students 
+where tuition_received = false;
 
-select distinct(best.student_id), best.student_name
-from best, total_subjects, stu_subj_total
-where total_subjects.t_subj= stu_subj_total.s_subj
+--------------------------------------------------------------------------------------------------------
+Best-Selling Books (SQL for Beginners #5)
+
+select * from books
+order by copies_sold desc limit 5;
+
+--------------------------------------------------------------------------------------------------------
+SQL with Pokemon: Damage Multipliers
+
+select p.pokemon_name, (p.str*m.multiplier) as modifiedStrength, m.element
+from pokemon p
+left join multipliers m
+on p.element_id=m.id
+where (p.str*m.multiplier)>=40
+order by modifiedStrength desc;
+
+---------------------------------------------------------------------------------------------------------
+GROCERY STORE: Real Price!
+
+select name, price, weight, round((price*1000/weight)::numeric, 2)::float as price_per_kg
+from products
+order by 4 asc, 1 asc;
+
+---------------------------------------------------------------------------------------------------------
+Filtering Films by Special Features in PostgreSQL: Part 3
+
+select film_id, title, special_features
+from film
+where ('Deleted Scenes' = any(special_features) 
+or 'Behind the Scenes' = any(special_features))
+and not ('Deleted Scenes' = any(special_features) 
+and'Behind the Scenes' = any(special_features))
+and not 'Commentaries' = any(special_features)
+order by 2 asc, 1 asc;
+
+----------------------------------------------------------------------------------------------------------
+Filtering Films by Special Features in PostgreSQL: Part 2
+
+select film_id, title, special_features
+from film
+where special_features @> array['Trailers', 'Deleted Scenes'] 
+and array_length(special_features, 1) = 2
+order by 2, 1 asc;
+
+-----------------------------------------------------------------------------------------------------------
+GROCERY STORE: Support Local Products
+
+select count(name) as products, country 
+from products
+where country in ('United States of America', 'Canada')
+group by country
 order by 1 desc;
+
+-----------------------------------------------------------------------------------------------------------
+GROCERY STORE: Logistic Optimisation
+
+select count(name) as count_products_types, producer 
+from products
+group by producer
+order by 1 desc, 2 asc;
+
+-----------------------------------------------------------------------------------------------------------
+Refactoring SQL Queries: part 1 (removing UNION)
+
+SELECT distinct city_name 
+FROM stations 
+WHERE city_name LIKE 'A%'
+or city_name LIKE 'E%'
+or city_name LIKE 'I%'
+or city_name LIKE 'O%'
+or city_name LIKE 'U%'
+ORDER BY city_name ASC;
+
+-----------------------------------------------------------------------------------------------------------
+GROCERY STORE: Inventory
+
+select id, name, stock
+from products
+where producent ='CompanyA'
+and stock <= 2
+order by 1;
+
+-----------------------------------------------------------------------------------------------------------
+BASICS: Length based SELECT with LIKE
+
+select first_name, last_name
+from names 
+where first_name like '______%';
+
+-----------------------------------------------------------------------------------------------------------
+SQL Basics: Up and Down
+
+select 
+case sum(number1) % 2
+when 0 then max(number1) 
+else min(number1)
+end 
+as number1,
+case sum(number2) % 2
+when 0 then max(number2)
+else min(number2)
+end 
+as number2
+from numbers;
+
+
+
+
+
 
