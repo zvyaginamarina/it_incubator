@@ -1,6 +1,7 @@
 MakeUpperCase
 
 select s, upper(s) as res from makeuppercase;
+
 ------------------------------------------------------------------------------
 
 SQL Basics: Simple EXISTS
@@ -8,17 +9,20 @@ SQL Basics: Simple EXISTS
 select departments.name, departments.id from departments
 where exists
 (select price from sales where sales.department_id=departments.id and price > 98);
+
 --------------------------------------------------------------------------------
 SQL Basics: Simple IN
 
 select id, name from departments
 where id in (select department_id from sales where price > 98.00)
+
 ---------------------------------------------------------------------------------
 Easy SQL: Counting and Grouping
 
 select race, count(id) as count from demographics
 group by race
 order by count DESC;
+
 -----------------------------------------------------------------------------
 Consolidating Sales and Returns Data
 
@@ -30,6 +34,7 @@ from table_sales as ts
 full join table_returns as tr
 on ts.product_id=tr.product_id and ts.date=tr.date
 order by  product_id asc, date asc;
+
 -----------------------------------------------------------------------------
 Customers with All Orders Undelivered
 
@@ -38,6 +43,7 @@ from orders
 where customer_id not in 
 (select customer_id from orders where delivery_date is not null) 
 order by 1 desc
+
 -----------------------------------------------------------------------------
 Number of New Customers per Date
 
@@ -48,6 +54,7 @@ from customer_purchases
 group by customer_id) as x
 group by date
 order by date asc
+
 --------------------------------------------------------------------------------
 Books That Are Always Being Returned
 
@@ -60,6 +67,7 @@ where b.book_id not in
 from loans l
 where return_date is null)
 order by b.book_id desc
+
 ----------------------------------------------------------------------------------
 The Dunning-Kruger effect
 
@@ -74,6 +82,7 @@ case
  where perceived_skill_level>actual_skill_level
  order by skill_overestimation desc, id desc
 -- Beware of Dunning-Kruger effect: you might not be as good as you think!
+
 ---------------------------------------------------------------------------------
 Users with More Than 2 Videos Watched
 
@@ -90,6 +99,7 @@ order by 1 asc) as x
 group by user_id
 having count(video_id)>1) as z)
 order by 1 asc, 2 asc
+
 -----------------------------------------------------------------------
 All-Inclusive Shoppers
 
@@ -110,6 +120,7 @@ order by u.id asc, o.product_id asc) as x
 group by uid, uname
 having count(pr_id) = (select pr_sum from cte)) as y
 order by 1 desc
+
 --------------------------------------------------------------------------
 SQL with Sailor Moon: Thinking about JOINs...
 
@@ -120,4 +131,245 @@ left join cats c
 on ss.cat_id=c.id
 full join schools sc
 on sc.id=ss.school_id
+
 ------------------------------------------------------------------------------
+Sorting Madness: part 2
+
+with mltp as (
+select order_id, product_id,
+min(order_id) over (partition by product_id) as min_order_id
+from orders
+where product_id in
+(select product_id
+from
+(select product_id, count(order_id)
+from orders
+group by product_id
+having count(order_id)>1) as x)
+order by min_order_id asc, 2 desc, 1 asc),
+ 
+sngl as (
+select order_id, product_id,
+min(order_id) over (partition by product_id) as min_order_id
+from orders
+where product_id in
+(select product_id
+from
+(select product_id, count(order_id)
+from orders
+group by product_id
+having count(order_id)=1) as y)
+order by min_order_id asc, 2 desc, 1 asc)
+
+select order_id, product_id from mltp
+union all
+select order_id, product_id from sngl
+
+------------------------------------------------------------------------
+SQL Basics: Simple JOIN with COUNT
+
+select  ppl.id, ppl.name, count(toys.id) toy_count
+from people ppl
+join toys toys
+on toys.people_id=ppl.id
+group by ppl.id, ppl.name;
+
+------------------------------------------------------------------------
+Order Ratio for Each Product
+
+with total as (
+select count(*) as total from orders)
+
+select  product_id, count(*) as count, ((count(*)::decimal/total.total)::decimal(6,4)*100) as ratio
+from orders, total
+group by product_id, total.total
+order by 1 asc;
+
+-------------------------------------------------------------------------
+Deal Activity Analysis
+
+with d_active as (
+select account_id, 
+case
+when extract(day from now()-occurred_at)<90 then true
+else false
+end as is_active,
+extract(day from now()-occurred_at)||' days and '||extract(hours from now()-occurred_at)||' hours ago' as last_login
+from deal_login_fact)
+
+select d.deal_id, d.deal_name, d_active.is_active as is_active, d_active.last_login as last_login
+from deals d
+join d_active
+on d.deal_id=d_active.account_id
+order by 1 desc;
+
+----------------------------------------------------------------------------------------------------------
+SQL with LOTR: Elven Wildcards
+
+select initcap(firstname)||' '||initcap(lastname) as shortlist
+from elves
+where firstname like '%tegil%'
+or
+lastname like '%astar%';
+
+----------------------------------------------------------------------------------------------------------
+SQL with Street Fighter: Total Wins
+
+select f.name, sum(f.won) won, sum(f.lost) lost
+from fighters f
+join winning_moves wm
+on f.move_id=wm.id
+where wm.id not in
+(select winning_moves.id from winning_moves
+where move like 'Hadoken'
+or move like 'Shouoken'
+or move like 'Kikoken')
+group by f.name
+order by 2 desc limit 6;
+
+---------------------------------------------------------------------------------------------------------
+Countries Capitals for Trivia Night (SQL for Beginners #6)
+
+select capital from  countries 
+where continent like '%Afri_a'
+and country like initcap('e%')
+order by capital asc limit 3;
+
+---------------------------------------------------------------------------------------------------------
+Adults only (SQL for Beginners #1)
+
+select * from users
+where age >=18;
+
+---------------------------------------------------------------------------------------------------------
+On the Canadian Border (SQL for Beginners #2)
+
+select * from travelers
+where country not like initcap('canada')
+and country not like initcap('mexico')
+and country not like upper('usa');
+
+---------------------------------------------------------------------------------------------------------
+Register for the Party (SQL for Beginners #3)
+
+INSERT into participants (name, age, attending)
+values ('Marina', 35, true);
+
+SELECT * FROM participants;
+
+---------------------------------------------------------------------------------------------------------
+Collect Tuition (SQL for Beginners #4)
+
+select * from students 
+where tuition_received = false;
+
+--------------------------------------------------------------------------------------------------------
+Best-Selling Books (SQL for Beginners #5)
+
+select * from books
+order by copies_sold desc limit 5;
+
+--------------------------------------------------------------------------------------------------------
+SQL with Pokemon: Damage Multipliers
+
+select p.pokemon_name, (p.str*m.multiplier) as modifiedStrength, m.element
+from pokemon p
+left join multipliers m
+on p.element_id=m.id
+where (p.str*m.multiplier)>=40
+order by modifiedStrength desc;
+
+---------------------------------------------------------------------------------------------------------
+GROCERY STORE: Real Price!
+
+select name, price, weight, round((price*1000/weight)::numeric, 2)::float as price_per_kg
+from products
+order by 4 asc, 1 asc;
+
+---------------------------------------------------------------------------------------------------------
+Filtering Films by Special Features in PostgreSQL: Part 3
+
+select film_id, title, special_features
+from film
+where ('Deleted Scenes' = any(special_features) 
+or 'Behind the Scenes' = any(special_features))
+and not ('Deleted Scenes' = any(special_features) 
+and'Behind the Scenes' = any(special_features))
+and not 'Commentaries' = any(special_features)
+order by 2 asc, 1 asc;
+
+----------------------------------------------------------------------------------------------------------
+Filtering Films by Special Features in PostgreSQL: Part 2
+
+select film_id, title, special_features
+from film
+where special_features @> array['Trailers', 'Deleted Scenes'] 
+and array_length(special_features, 1) = 2
+order by 2, 1 asc;
+
+-----------------------------------------------------------------------------------------------------------
+GROCERY STORE: Support Local Products
+
+select count(name) as products, country 
+from products
+where country in ('United States of America', 'Canada')
+group by country
+order by 1 desc;
+
+-----------------------------------------------------------------------------------------------------------
+GROCERY STORE: Logistic Optimisation
+
+select count(name) as count_products_types, producer 
+from products
+group by producer
+order by 1 desc, 2 asc;
+
+-----------------------------------------------------------------------------------------------------------
+Refactoring SQL Queries: part 1 (removing UNION)
+
+SELECT distinct city_name 
+FROM stations 
+WHERE city_name LIKE 'A%'
+or city_name LIKE 'E%'
+or city_name LIKE 'I%'
+or city_name LIKE 'O%'
+or city_name LIKE 'U%'
+ORDER BY city_name ASC;
+
+-----------------------------------------------------------------------------------------------------------
+GROCERY STORE: Inventory
+
+select id, name, stock
+from products
+where producent ='CompanyA'
+and stock <= 2
+order by 1;
+
+-----------------------------------------------------------------------------------------------------------
+BASICS: Length based SELECT with LIKE
+
+select first_name, last_name
+from names 
+where first_name like '______%';
+
+-----------------------------------------------------------------------------------------------------------
+SQL Basics: Up and Down
+
+select 
+case sum(number1) % 2
+when 0 then max(number1) 
+else min(number1)
+end 
+as number1,
+case sum(number2) % 2
+when 0 then max(number2)
+else min(number2)
+end 
+as number2
+from numbers;
+
+
+
+
+
+
