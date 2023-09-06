@@ -8,4 +8,5 @@
 
 ##### Quality Assurance and Testing with Chai
 [Unit tests](https://github.com/zvyaginamarina/it_incubator/blob/main/1_unit-tests.js)
+
 [Functional tests](https://github.com/zvyaginamarina/it_incubator/blob/main/2_functional-tests.js)
